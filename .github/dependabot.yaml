@@ -4,6 +4,7 @@ updates:
   directory: "/"
   schedule:
     interval: "monthly"
+# Go mod bot configurations
 - package-ecosystem: "gomod"
   directory: "/"
   schedule:
@@ -15,7 +16,11 @@ updates:
     go.opentelemetry.io:
       patterns:
       - "go.opentelemetry.io/*"
+    prometheus:
+      patterns:
+      - "github.com/prometheus/*"
   open-pull-requests-limit: 20
+# Docker bot configurations
 - package-ecosystem: "docker"
   directory: "/"
   schedule:
