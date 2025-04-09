@@ -1,5 +1,6 @@
 ---
 name: CLA Assistant
+
 on:
   issue_comment:
     types: [created]
