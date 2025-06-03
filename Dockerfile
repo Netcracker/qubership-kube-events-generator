@@ -17,7 +17,7 @@ COPY main.go main.go
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o generator main.go
 
 # Use alpine tiny images as a base
-FROM alpine:3.21.3
+FROM alpine:3.22.0
 
 ENV USER_UID=2001 \
     USER_NAME=generator \
