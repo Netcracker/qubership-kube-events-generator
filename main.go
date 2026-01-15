@@ -61,6 +61,62 @@ func readEnv(env string, defaultValue int) int {
 	return defaultValue
 }
 
+func createEvent(i int, randomizer *rand.Rand, namespace string, apiVKindName []string) *corev1.Event {
+	lastTs := metav1.Time{Time: time.Now()}
+	eventName := fmt.Sprintf("test-%v-%v", i, randomizer.Intn(10000000))
+	event := &corev1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      eventName,
+			Namespace: namespace,
+		},
+		InvolvedObject: corev1.ObjectReference{
+			Kind:            apiVKindName[1],
+			Namespace:       namespace,
+			Name:            apiVKindName[2],
+			UID:             types.UID(apiVKindName[3]),
+			APIVersion:      apiVKindName[0],
+			ResourceVersion: strconv.Itoa(randomizer.Intn(100000)),
+		},
+		Message:        "This is test message of Event to load cloud-events-reader. Do not worry",
+		FirstTimestamp: lastTs,
+		LastTimestamp:  lastTs,
+		Type:           "Normal",
+		Reason:         "Completed",
+		Source: corev1.EventSource{
+			Component: "k8s-event-generator",
+		},
+		Count: int32(i),
+	}
+	return event
+}
+
+func runGenerator(kubeClient kubernetes.Interface, count, sleep, maxLoops int, namespace string, apiVKindName []string) {
+	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
+	loops := 0
+	for {
+		if maxLoops > 0 && loops >= maxLoops {
+			break
+		}
+		createdCount := 0
+		for i := 0; i < count; i++ {
+			event := createEvent(i, randomizer, namespace, apiVKindName)
+			if _, err := kubeClient.CoreV1().Events(namespace).Create(context.TODO(), event, metav1.CreateOptions{}); err != nil {
+				Logger.Error("Could not create Event", "err", err)
+			} else {
+				createdCount++
+				Logger.Info("Event created", "Event", event.Name)
+			}
+		}
+		Logger.Info(fmt.Sprintf("Sleeping for %v seconds. Created object count: %v", sleep, createdCount))
+		loops++
+		if maxLoops > 0 {
+			// For testing, don't sleep between iterations
+			continue
+		}
+		time.Sleep(time.Duration(sleep) * time.Second)
+	}
+}
+
 func main() {
 	cfg := ctrl.GetConfigOrDie()
 	kubeClient, err := kubernetes.NewForConfig(cfg)
@@ -69,43 +125,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for {
-		createdCount := 0
-		for i := 0; i < count; i++ {
-			lastTs := metav1.Time{Time: time.Now()}
-			eventName := fmt.Sprintf("test-%v-%v", i, randomizer.Intn(10000000))
-			event := &corev1.Event{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      eventName,
-					Namespace: namespace,
-				},
-				InvolvedObject: corev1.ObjectReference{
-					Kind:            apiVKindName[1], //"GrafanaDashboard",
-					Namespace:       namespace,
-					Name:            apiVKindName[2],                       //"graylog-grafana-dashboard-vm",
-					UID:             types.UID(apiVKindName[3]),            //"04e98ff7-7471-451f-a9cf-4bcad4a1bd41",
-					APIVersion:      apiVKindName[0],                       //"integreatly.org/v1alpha1",
-					ResourceVersion: strconv.Itoa(randomizer.Intn(100000)), //"78496715",
-				},
-				Message:        "This is test message of Event to load cloud-events-reader. Do not worry",
-				FirstTimestamp: lastTs,
-				LastTimestamp:  lastTs,
-				Type:           "Normal",
-				Reason:         "Completed",
-				Source: corev1.EventSource{
-					Component: "k8s-event-generator",
-				},
-				Count: int32(i),
-			}
-			if _, err = kubeClient.CoreV1().Events(namespace).Create(context.TODO(), event, metav1.CreateOptions{}); err != nil {
-				Logger.Error("Could not create Event", "err", err)
-			} else {
-				createdCount++
-				Logger.Info("Event created", "Event", eventName)
-			}
-		}
-		Logger.Info(fmt.Sprintf("Sleeping for %v seconds. Created object count: %v", sleep, createdCount))
-		time.Sleep(time.Duration(sleep) * time.Second)
-	}
+	runGenerator(kubeClient, count, sleep, 0, namespace, apiVKindName)
 }
