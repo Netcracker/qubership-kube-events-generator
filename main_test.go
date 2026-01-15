@@ -87,7 +87,7 @@ func TestNamespace(t *testing.T) {
 	}
 
 	// Test with env not set
-	os.Unsetenv("NAMESPACE")
+	_ = os.Unsetenv("NAMESPACE")
 	actual = func(env string, defaultValue string) string {
 		if value := os.Getenv(env); value != "" {
 			return value
