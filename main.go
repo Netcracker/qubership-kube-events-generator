@@ -93,10 +93,7 @@ func createEvent(i int, randomizer *rand.Rand, namespace string, apiVKindName []
 func runGenerator(kubeClient kubernetes.Interface, count, sleep, maxLoops int, namespace string, apiVKindName []string) {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 	loops := 0
-	for {
-		if maxLoops > 0 && loops >= maxLoops {
-			break
-		}
+	for maxLoops <= 0 || loops < maxLoops {
 		createdCount := 0
 		for i := 0; i < count; i++ {
 			event := createEvent(i, randomizer, namespace, apiVKindName)

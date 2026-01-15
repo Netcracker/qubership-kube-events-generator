@@ -14,7 +14,9 @@ import (
 
 func TestReadEnv(t *testing.T) {
 	// Test case 1: Valid positive integer
-	os.Setenv("TEST_COUNT", "10")
+	if err := os.Setenv("TEST_COUNT", "10"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("TEST_COUNT")
 	result := readEnv("TEST_COUNT", 5)
 	if result != 10 {
@@ -22,7 +24,9 @@ func TestReadEnv(t *testing.T) {
 	}
 
 	// Test case 2: Invalid string (should use default)
-	os.Setenv("TEST_COUNT", "invalid")
+	if err := os.Setenv("TEST_COUNT", "invalid"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("TEST_COUNT")
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
@@ -30,7 +34,9 @@ func TestReadEnv(t *testing.T) {
 	}
 
 	// Test case 3: Zero value (should use default)
-	os.Setenv("TEST_COUNT", "0")
+	if err := os.Setenv("TEST_COUNT", "0"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("TEST_COUNT")
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
@@ -38,7 +44,9 @@ func TestReadEnv(t *testing.T) {
 	}
 
 	// Test case 4: Negative value (should use default)
-	os.Setenv("TEST_COUNT", "-1")
+	if err := os.Setenv("TEST_COUNT", "-1"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("TEST_COUNT")
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
@@ -46,7 +54,9 @@ func TestReadEnv(t *testing.T) {
 	}
 
 	// Test case 5: Empty string (should use default)
-	os.Setenv("TEST_COUNT", "")
+	if err := os.Setenv("TEST_COUNT", ""); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("TEST_COUNT")
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
@@ -62,7 +72,9 @@ func TestReadEnv(t *testing.T) {
 
 func TestNamespace(t *testing.T) {
 	// Test with env set
-	os.Setenv("NAMESPACE", "test-ns")
+	if err := os.Setenv("NAMESPACE", "test-ns"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("NAMESPACE")
 	actual := func(env string, defaultValue string) string {
 		if value := os.Getenv(env); value != "" {
@@ -96,7 +108,9 @@ func TestApiVKindName(t *testing.T) {
 	}
 
 	// Test with invalid length (4 instead of 5)
-	os.Setenv("INVOLVEDOBJECT", "a,b,c,d")
+	if err := os.Setenv("INVOLVEDOBJECT", "a,b,c,d"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Unsetenv("INVOLVEDOBJECT")
 	actual := func(env string, defaultValue []string) []string {
 		result := strings.Split(os.Getenv(env), ",")
@@ -115,7 +129,9 @@ func TestApiVKindName(t *testing.T) {
 	}
 
 	// Test with valid input
-	os.Setenv("INVOLVEDOBJECT", "v1,Kind,Name,UID,Version")
+	if err := os.Setenv("INVOLVEDOBJECT", "v1,Kind,Name,UID,Version"); err != nil {
+		t.Fatal(err)
+	}
 	actual = func(env string, defaultValue []string) []string {
 		result := strings.Split(os.Getenv(env), ",")
 		if len(result) != 5 {
@@ -136,7 +152,9 @@ func TestApiVKindName(t *testing.T) {
 	}
 
 	// Test with empty value in split
-	os.Setenv("INVOLVEDOBJECT", "v1,,Name,UID,Version")
+	if err := os.Setenv("INVOLVEDOBJECT", "v1,,Name,UID,Version"); err != nil {
+		t.Fatal(err)
+	}
 	actual = func(env string, defaultValue []string) []string {
 		result := strings.Split(os.Getenv(env), ",")
 		if len(result) != 5 {
@@ -161,8 +179,8 @@ func TestCreateEvent(t *testing.T) {
 
 	event := createEvent(1, randomizer, namespace, apiVKindName)
 
-	if event.ObjectMeta.Namespace != namespace {
-		t.Errorf("Expected namespace %s, got %s", namespace, event.ObjectMeta.Namespace)
+	if event.Namespace != namespace {
+		t.Errorf("Expected namespace %s, got %s", namespace, event.Namespace)
 	}
 
 	if event.InvolvedObject.Kind != "Pod" {
@@ -205,7 +223,7 @@ func TestCreateEvent(t *testing.T) {
 
 func TestRunGenerator(t *testing.T) {
 	// Create a fake Kubernetes client
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 
 	namespace := "test-namespace"
 	apiVKindName := []string{"v1", "Pod", "test-pod", "uid-123", "version-1"}
@@ -227,8 +245,8 @@ func TestRunGenerator(t *testing.T) {
 	}
 
 	for i, event := range events.Items {
-		if event.ObjectMeta.Namespace != namespace {
-			t.Errorf("Event %d: expected namespace %s, got %s", i, namespace, event.ObjectMeta.Namespace)
+		if event.Namespace != namespace {
+			t.Errorf("Event %d: expected namespace %s, got %s", i, namespace, event.Namespace)
 		}
 		if event.InvolvedObject.Kind != apiVKindName[1] {
 			t.Errorf("Event %d: expected kind %s, got %s", i, apiVKindName[1], event.InvolvedObject.Kind)
