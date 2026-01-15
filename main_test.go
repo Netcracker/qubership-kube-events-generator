@@ -17,7 +17,7 @@ func TestReadEnv(t *testing.T) {
 	if err := os.Setenv("TEST_COUNT", "10"); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("TEST_COUNT")
+	defer func() { _ = os.Unsetenv("TEST_COUNT") }()
 	result := readEnv("TEST_COUNT", 5)
 	if result != 10 {
 		t.Errorf("Expected 10, got %d", result)
@@ -27,7 +27,7 @@ func TestReadEnv(t *testing.T) {
 	if err := os.Setenv("TEST_COUNT", "invalid"); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("TEST_COUNT")
+	defer func() { _ = os.Unsetenv("TEST_COUNT") }()
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
 		t.Errorf("Expected 5, got %d", result)
@@ -37,7 +37,7 @@ func TestReadEnv(t *testing.T) {
 	if err := os.Setenv("TEST_COUNT", "0"); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("TEST_COUNT")
+	defer func() { _ = os.Unsetenv("TEST_COUNT") }()
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
 		t.Errorf("Expected 5, got %d", result)
@@ -47,7 +47,7 @@ func TestReadEnv(t *testing.T) {
 	if err := os.Setenv("TEST_COUNT", "-1"); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("TEST_COUNT")
+	defer func() { _ = os.Unsetenv("TEST_COUNT") }()
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
 		t.Errorf("Expected 5, got %d", result)
@@ -57,7 +57,7 @@ func TestReadEnv(t *testing.T) {
 	if err := os.Setenv("TEST_COUNT", ""); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("TEST_COUNT")
+	defer func() { _ = os.Unsetenv("TEST_COUNT") }()
 	result = readEnv("TEST_COUNT", 5)
 	if result != 5 {
 		t.Errorf("Expected 5, got %d", result)
@@ -75,7 +75,7 @@ func TestNamespace(t *testing.T) {
 	if err := os.Setenv("NAMESPACE", "test-ns"); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("NAMESPACE")
+	defer func() { _ = os.Unsetenv("NAMESPACE") }()
 	actual := func(env string, defaultValue string) string {
 		if value := os.Getenv(env); value != "" {
 			return value
@@ -111,7 +111,7 @@ func TestApiVKindName(t *testing.T) {
 	if err := os.Setenv("INVOLVEDOBJECT", "a,b,c,d"); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Unsetenv("INVOLVEDOBJECT")
+	defer func() { _ = os.Unsetenv("INVOLVEDOBJECT") }()
 	actual := func(env string, defaultValue []string) []string {
 		result := strings.Split(os.Getenv(env), ",")
 		if len(result) != 5 {
