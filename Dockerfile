@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM --platform=$BUILDPLATFORM golang:1.25.5-alpine3.22 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.6-alpine3.22 AS builder
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
@@ -20,7 +20,7 @@ COPY main.go main.go
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GO111MODULE=on go build -a -o generator main.go
 
 # Use alpine tiny images as a base
-FROM alpine:3.23.2
+FROM alpine:3.23.3
 
 ENV USER_UID=2001 \
     USER_NAME=generator \
