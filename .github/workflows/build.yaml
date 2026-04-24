@@ -28,8 +28,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      is-restricted: ${{ steps.config.outputs.is-restricted }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+      - name: Check if actor is restricted
+        id: config
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          restricted=$(python3 -c "
+          import yaml, os
+          with open('.github/config/build-config.yaml') as f:
+              config = yaml.safe_load(f)
+          actors = config.get('restricted-actors', [])
+          print('true' if os.environ['ACTOR'] in actors else 'false')
+          ")
+          echo "is-restricted=$restricted" >> "$GITHUB_OUTPUT"
+
   multiplatform_build:
-    if: github.event.pull_request.user.login != 'dependabot[bot]' || github.event_name == 'pull_request'
+    needs: [prepare]
+    if: needs.prepare.outputs.is-restricted != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +64,8 @@ jobs:
           context: .
     runs-on: ubuntu-latest
     name: ${{ matrix.component.name }}
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@v6.0.2
@@ -69,7 +96,7 @@ jobs:
         file: ${{ matrix.component.file }}
         platforms: linux/amd64,linux/arm64
         # See https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#fetching-metadata-about-a-pull-request
-        push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        push: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.is-restricted != 'true' }}
         provenance: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
