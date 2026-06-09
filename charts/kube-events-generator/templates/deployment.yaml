@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.serviceName }}
+    app.kubernetes.io/component: {{ .Values.serviceName }}
+    app.kubernetes.io/part-of: logging
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.serviceName }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25
+      maxUnavailable: 25
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.serviceName }}
+        app.kubernetes.io/component: {{ .Values.serviceName }}
+        app.kubernetes.io/part-of: logging
+    spec:
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.serviceName }}
+          image: {{ template "kube-events.image" . }}
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          env:
+            - name: COUNT
+              value: "30"
+            - name: SLEEP
+              value: "20"

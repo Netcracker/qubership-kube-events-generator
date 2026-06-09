@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "schedule:weekly"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "prConcurrentLimit": 20,
+  "packageRules": [
+    {
+      "description": "All other GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "actions-deps"
+    },
+    {
+      "description": "All other 3rd party Docker images",
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker-deps"
+    },
+    {
+      "description": "All other Go dependencies",
+      "matchManagers": ["gomod"],
+      "groupName": "go-deps"
+    },
+    {
+      "description": "Kubernetes-related Go modules",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["k8s.io/**", "sigs.k8s.io/**"],
+      "groupName": "go-k8s"
+    },
+    {
+      "description": "OpenTelemetry Go modules",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["go.opentelemetry.io/**"],
+      "groupName": "go-opentelemetry"
+    },
+    {
+      "description": "Prometheus Go modules",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/prometheus/**"],
+      "groupName": "go-monitoring"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+serviceName: kube-events-generator
+serviceAccountName: kube-events-generator
+namespace: logging
+
+image:
+  #repository: ghcr.io/netcracker/qubership-kube-events-generator
+  #tag: main
+  pullSecrets: [] # kubernetes secret name. Only pods which provide own keys can access the private registry.
