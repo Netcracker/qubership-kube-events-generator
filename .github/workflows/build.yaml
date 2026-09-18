@@ -1,4 +1,5 @@
 name: Build Artifacts
+run-name: "Ref: ${{ github.ref_name }}. On ${{ github.event_name }}"
 
 on:
   release:
@@ -14,11 +15,8 @@ on:
   pull_request:
     branches:
     - '**'
-    paths-ignore:
-    - '.github/**'
-    - 'docs/**'
-    - '*.md'
-    - 'LICENSE'
+
+permissions: {}
 
 concurrency:
   # On main/release, we don't want any jobs cancelled so the sha is used to name the group
@@ -29,7 +27,9 @@ concurrency:
 
 jobs:
   prepare:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       is-restricted: ${{ steps.config.outputs.is-restricted }}
     permissions:
@@ -53,8 +53,7 @@ jobs:
           echo "is-restricted=$restricted" >> "$GITHUB_OUTPUT"
 
   multiplatform_build:
-    needs: [prepare]
-    if: needs.prepare.outputs.is-restricted != 'true'
+    if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -63,13 +62,15 @@ jobs:
           file: Dockerfile
           context: .
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     name: ${{ matrix.component.name }}
     permissions:
       contents: read
-      packages: write
     steps:
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Docker meta
       id: meta
       uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
@@ -83,7 +84,53 @@ jobs:
       uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
-    - name: Login to Docker Hub
+    - name: Build
+      uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+      with:
+        no-cache: true
+        context: ${{ matrix.component.context }}
+        file: ${{ matrix.component.file }}
+        platforms: linux/amd64,linux/arm64
+        push: false
+        provenance: false
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  multiplatform_publish:
+    needs: [prepare]
+    if: github.event_name != 'pull_request' && needs.prepare.outputs.is-restricted != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+        - name: qubership-kube-events-generator
+          file: Dockerfile
+          context: .
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    name: Publish ${{ matrix.component.name }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+      with:
+        images: |
+          ghcr.io/${{ github.repository_owner }}/${{ matrix.component.name }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=tag
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+    - name: Login to GHCR
       uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
       with:
         registry: ghcr.io
@@ -96,8 +143,19 @@ jobs:
         context: ${{ matrix.component.context }}
         file: ${{ matrix.component.file }}
         platforms: linux/amd64,linux/arm64
-        # See https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#fetching-metadata-about-a-pull-request
-        push: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.is-restricted != 'true' }}
+        push: true
         provenance: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+  build-gate:
+    name: Build Gate
+    needs: [multiplatform_build]
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+    - name: Require successful build
+      if: needs.multiplatform_build.result != 'success'
+      run: exit 1
