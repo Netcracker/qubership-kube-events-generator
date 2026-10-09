@@ -1,7 +1,9 @@
 name: Go test with Sonar
 run-name: "Ref: ${{ github.ref_name }}. On ${{ github.event_name }}"
 on:
-  push: {}
+  push:
+    branches:
+      - main
   pull_request:
     types: [ opened, synchronize, reopened ]
 
