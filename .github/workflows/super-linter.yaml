@@ -15,7 +15,7 @@ run-name: "Ref: ${{ github.ref_name }}. On ${{ github.event_name }}"
 on:
   push:
     branches:
-      - '**'
+      - main
   pull_request:
     branches:
       - '**'
