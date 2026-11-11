@@ -2,7 +2,7 @@ module github.com/Netcracker/qubership-kube-events-generator
 
 go 1.26.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	k8s.io/api v0.37.2
